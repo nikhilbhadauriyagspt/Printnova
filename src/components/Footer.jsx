@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
+import toast from 'react-hot-toast';
 import { Mail, Phone, MapPin, ArrowRight, Printer, ShieldCheck, Zap } from 'lucide-react';
 
 const Footer = () => {
+    const [categories, setCategories] = useState([]);
+    const [email, setEmail] = useState('');
     const [branding, setBranding] = useState({
         name: 'PrintNova',
         contact_email: 'support@mystore.com',
@@ -13,16 +16,29 @@ const Footer = () => {
 
     useEffect(() => {
         const websiteId = import.meta.env.VITE_WEBSITE_ID || 1;
-        const fetchBranding = async () => {
+        const fetchData = async () => {
             try {
-                const res = await api.get(`/websites/${websiteId}`);
-                setBranding(res.data);
+                const [brandRes, catRes] = await Promise.all([
+                    api.get(`/websites/${websiteId}`),
+                    api.get('/categories')
+                ]);
+                setBranding(brandRes.data);
+                if (Array.isArray(catRes.data)) {
+                    setCategories(catRes.data.slice(0, 4)); 
+                }
             } catch (error) {
-                console.error("Failed to fetch footer branding");
+                console.error("Failed to fetch footer data");
             }
         };
-        fetchBranding();
+        fetchData();
     }, []);
+
+    const handleSubscribe = (e) => {
+        e.preventDefault();
+        if (!email) return;
+        toast.success("Thanks for subscribing!");
+        setEmail('');
+    };
 
     return (
         <footer className="bg-[#0a0f12] text-gray-400 pt-24 pb-12 relative overflow-hidden">
@@ -50,28 +66,33 @@ const Footer = () => {
                         <h4 className="text-white font-bold mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
                             <Zap size={14} className="text-teal-500" /> Stay Updated
                         </h4>
-                        <div className="relative group">
+                        <form onSubmit={handleSubscribe} className="relative group">
                             <input 
                                 type="email" 
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 placeholder="Enter your business email" 
                                 className="w-full bg-white/5 border border-white/10 p-5 rounded-3xl text-white outline-none focus:border-teal-500 focus:bg-white/10 transition-all placeholder:text-gray-600"
                             />
-                            <button className="absolute right-2 top-2 bg-teal-600 hover:bg-teal-500 text-white p-3 rounded-2xl transition-all shadow-lg shadow-teal-900/20 active:scale-95">
+                            <button type="submit" className="absolute right-2 top-2 bg-teal-600 hover:bg-teal-500 text-white p-3 rounded-2xl transition-all shadow-lg shadow-teal-900/20 active:scale-95">
                                 <ArrowRight size={20} />
                             </button>
-                        </div>
+                        </form>
                         <p className="text-[10px] text-gray-600 mt-3 ml-2 font-bold uppercase tracking-wider">Join 5,000+ professionals receiving tech insights weekly.</p>
                     </div>
                 </div>
 
                 {/* --- MIDDLE SECTION: QUICK LINKS --- */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-12 py-20">
-                    <FooterLinkSet title="Shop" links={[
-                        { label: 'All Printers', to: '/products' },
-                        { label: 'New Arrivals', to: '/products?filter=new' },
-                        { label: 'Special Deals', to: '/products?filter=deals' },
-                        { label: '3D Printing', to: '/products?category=3d-printers' }
-                    ]} />
+                    <FooterLinkSet title="Shop" links={
+                        categories.length > 0 ? categories.map(cat => ({
+                            label: cat.name,
+                            to: `/products?category=${cat.slug}`
+                        })) : [
+                            { label: 'All Printers', to: '/products' }
+                        ]
+                    } />
                     
                     <FooterLinkSet title="Support" links={[
                         { label: 'Help Center', to: '/faq' },
@@ -90,8 +111,8 @@ const Footer = () => {
                     <div className="col-span-2 md:col-span-1">
                         <h4 className="text-white font-black uppercase text-[10px] tracking-[0.2em] mb-8">Direct Contact</h4>
                         <ul className="space-y-6">
-                            <ContactItem icon={<Phone size={18} />} val={branding.phone} sub="Direct Support Line" />
-                            <ContactItem icon={<Mail size={18} />} val={branding.contact_email} sub="Email Inquiries" />
+                            <ContactItem icon={<Phone size={18} />} val={branding.phone} sub="Direct Support Line" href={`tel:${branding.phone}`} />
+                            <ContactItem icon={<Mail size={18} />} val={branding.contact_email} sub="Email Inquiries" href={`mailto:${branding.contact_email}`} />
                             <ContactItem icon={<MapPin size={18} />} val={branding.contact_address} sub="Headquarters" />
                         </ul>
                     </div>
@@ -136,11 +157,17 @@ const FooterLinkSet = ({ title, links }) => (
     </div>
 );
 
-const ContactItem = ({ icon, val, sub }) => (
-    <li className="flex items-start gap-4 group cursor-default">
+const ContactItem = ({ icon, val, sub, href }) => (
+    <li className="flex items-start gap-4 group">
         <div className="mt-1 text-teal-600 group-hover:text-teal-400 transition-colors">{icon}</div>
         <div>
-            <p className="text-sm font-bold text-gray-300">{val}</p>
+            {href ? (
+                <a href={href} className="text-sm font-bold text-gray-300 hover:text-teal-500 transition-colors block">
+                    {val}
+                </a>
+            ) : (
+                <p className="text-sm font-bold text-gray-300">{val}</p>
+            )}
             <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mt-0.5">{sub}</p>
         </div>
     </li>

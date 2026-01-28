@@ -1,9 +1,16 @@
 const db = require('../config/db');
 
-// Get all categories
+// Get all categories (Only those containing products)
 exports.getAllCategories = async (req, res) => {
     try {
-        const [categories] = await db.query('SELECT * FROM categories ORDER BY name ASC');
+        const query = `
+            SELECT DISTINCT c.* 
+            FROM categories c
+            INNER JOIN products p ON c.id = p.category_id
+            WHERE p.status = 1
+            ORDER BY c.name ASC
+        `;
+        const [categories] = await db.query(query);
         res.json(categories);
     } catch (error) {
         console.error(error);

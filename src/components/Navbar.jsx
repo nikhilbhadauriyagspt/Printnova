@@ -289,13 +289,13 @@ const Navbar = () => {
                                                 </ul>
                                             </div>
                                             {/* Column 4: Promo Image */}
-                                            <div className="bg-gray-100 rounded-xl p-6 relative overflow-hidden group/card cursor-pointer border border-gray-200">
+                                            <Link to="/products" className="bg-gray-100 rounded-xl p-6 relative overflow-hidden group/card cursor-pointer border border-gray-200 block">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent"></div>
                                                 <span className="bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide mb-2 inline-block">Sale</span>
                                                 <h4 className="font-bold text-gray-800 text-lg mb-1 group-hover/card:text-teal-700 transition-colors">New Arrivals</h4>
                                                 <p className="text-gray-500 text-sm mb-4">Check out our latest printers.</p>
                                                 <span className="text-teal-600 text-xs font-bold uppercase tracking-wider underline">Shop Now</span>
-                                            </div>
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
@@ -310,13 +310,15 @@ const Navbar = () => {
 
                         {/* Right: Quick Call to Action */}
                         <div className="flex items-center gap-4">
-                            <span className="text-sm font-medium text-teal-700">Need Help?</span>
-                            <Link
-                                to="/contact"
+                            <Link to="/faq" className="text-sm font-medium text-teal-700 hover:text-teal-900 transition-colors cursor-pointer">
+                                Need Help?
+                            </Link>
+                            <a
+                                href={`mailto:${branding.contact_email}`}
                                 className="bg-gray-900 text-white px-5 py-2 rounded-full text-xs font-bold hover:bg-teal-600 transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                             >
                                 GET IN TOUCH
-                            </Link>
+                            </a>
                         </div>
                     </div>
                 </div>
