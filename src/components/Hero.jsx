@@ -145,7 +145,7 @@ const Hero = () => {
           <div className="md:col-span-4 flex flex-col gap-4 h-full">
 
             {/* Top Side Card */}
-            <Link to="/products?category=Printer Accessories" className="flex-1 bg-teal-50 rounded-2xl relative overflow-hidden group cursor-pointer border border-teal-100 p-6 flex items-center justify-between hover:shadow-md transition-shadow">
+            <Link to="/products?category=printer-accessories" className="flex-1 bg-teal-50 rounded-2xl relative overflow-hidden group cursor-pointer border border-teal-100 p-6 flex items-center justify-between hover:shadow-md transition-shadow">
               <div className="relative z-10 max-w-[60%]">
                 <p className="text-teal-600 font-bold text-sm mb-1 uppercase">Essentials</p>
                 <h3 className="text-2xl font-bold text-gray-800 mb-2">Original Inks</h3>
