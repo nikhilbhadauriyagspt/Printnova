@@ -29,7 +29,7 @@ const Shop = () => {
 
     useEffect(() => {
         if (selectedCategory !== 'All') {
-            const cat = categories.find(c => c.name === selectedCategory);
+            const cat = categories.find(c => c.slug === selectedCategory);
             if (cat) setCategorySEO(cat);
         } else {
             setCategorySEO(null);
@@ -38,6 +38,7 @@ const Shop = () => {
 
     // Fetch Products with Filters
     useEffect(() => {
+        let isMounted = true;
         const fetchProducts = async () => {
             try {
                 setLoading(true);
@@ -49,14 +50,20 @@ const Shop = () => {
                 if (stockStatus) params.append('stock', stockStatus);
                 
                 const res = await api.get(`/products?${params.toString()}`);
-                setProducts(res.data);
+                if (isMounted) {
+                    setProducts(res.data);
+                }
             } catch (error) {
                 console.error("Failed to fetch products", error);
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
         fetchProducts();
+        
+        return () => {
+            isMounted = false;
+        };
     }, [selectedCategory, searchTerm, priceRange, sortBy, stockStatus]);
 
     // Initial Category Fetch
@@ -287,7 +294,7 @@ const CategoryItem = ({ name, active, onClick }) => (
     </button>
 );
 
-const ShopProductCard = ({ product, view }) => {
+const ShopProductCard = React.memo(({ product, view }) => {
     const { addToCart } = useCart();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const activeWishlist = isInWishlist(product.id);
@@ -363,6 +370,6 @@ const ShopProductCard = ({ product, view }) => {
             </div>
         </div>
     );
-};
+});
 
 export default Shop;

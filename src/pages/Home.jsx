@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import Hero from '../components/Hero';
 import SEO from '../components/SEO';
+import Skeleton from '../components/Skeleton';
 import { ArrowRight, Star, Heart, Eye, Truck, ShieldCheck, Clock, UserCheck, Mail, ChevronLeft, ChevronRight, Timer, Zap, Quote, Calendar, X, ShoppingBag, Check } from 'lucide-react';
 
 const Home = () => {
@@ -15,27 +16,49 @@ const Home = () => {
     const [quickViewProduct, setQuickViewProduct] = useState(null);
     const [deal, setDeal] = useState(null);
     const [timeLeft, setTimeLeft] = useState({ hours: '00', mins: '00', secs: '00' });
+    const [loadingPrimary, setLoadingPrimary] = useState(true);
     const { addToCart } = useCart();
     const scrollRef = useRef(null);
 
+    // Primary Data Fetch (Critical for Initial Render)
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchPrimaryData = async () => {
             try {
-                const [prodRes, catRes, dealRes, blogRes] = await Promise.all([
+                const results = await Promise.allSettled([
                     api.get('/products'),
-                    api.get('/categories'),
+                    api.get('/categories')
+                ]);
+
+                if (results[0].status === 'fulfilled') setProducts(results[0].value.data);
+                if (results[1].status === 'fulfilled') setCategories(results[1].value.data);
+            } catch (error) {
+                console.error("Error fetching primary data:", error);
+            } finally {
+                setLoadingPrimary(false);
+            }
+        };
+        fetchPrimaryData();
+    }, []);
+
+    // Secondary Data Fetch (Defer to unblock main thread)
+    useEffect(() => {
+        const fetchSecondaryData = async () => {
+            try {
+                // Small delay to allow initial render to complete
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const results = await Promise.allSettled([
                     api.get('/settings/deal'),
                     api.get('/blogs')
                 ]);
-                setProducts(prodRes.data);
-                setCategories(catRes.data);
-                setDeal(dealRes.data);
-                setBlogs(blogRes.data);
+
+                if (results[0].status === 'fulfilled') setDeal(results[0].value.data);
+                if (results[1].status === 'fulfilled') setBlogs(results[1].value.data);
             } catch (error) {
-                console.error("Error fetching home data:", error);
+                console.error("Error fetching secondary data:", error);
             }
         };
-        fetchData();
+        fetchSecondaryData();
     }, []);
 
     // Countdown Timer Logic
@@ -76,8 +99,8 @@ const Home = () => {
 
     // Filter products for tabs
     const getTabProducts = () => {
+        if (!products.length) return [];
         if (activeTab === 'New Arrivals') {
-            // Sort by created_at desc (assuming id implies order if dates are same)
             return [...products].sort((a, b) => b.id - a.id).slice(0, 8);
         } else if (activeTab === 'Best Sellers') {
             return products.filter(p => p.is_best_selling).slice(0, 8);
@@ -131,7 +154,12 @@ const Home = () => {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 gap-y-20">
-                    {categories.slice(0, 10).map((cat, idx) => (
+                    {loadingPrimary ? Array(5).fill(0).map((_, i) => (
+                        <div key={i} className="flex flex-col items-center gap-4">
+                             <Skeleton className="w-32 h-32 rounded-full" />
+                             <Skeleton className="h-4 w-24" />
+                        </div>
+                    )) : categories.slice(0, 10).map((cat, idx) => (
                         <Link key={cat.id} to={`/products?category=${cat.slug}`} className="group flex flex-col items-center gap-4 cursor-pointer">
                             <div className="w-32 h-32 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center overflow-hidden group-hover:border-teal-400 group-hover:shadow-lg transition-all duration-300 relative">
                                 <div className="absolute inset-0 bg-teal-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"></div>
@@ -175,14 +203,20 @@ const Home = () => {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-                    {tabProducts.length > 0 ? tabProducts.map(product => (
+                    {loadingPrimary ? Array(4).fill(0).map((_, i) => (
+                        <div key={i} className="space-y-4">
+                            <Skeleton className="aspect-square w-full rounded-2xl" />
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                        </div>
+                    )) : tabProducts.length > 0 ? tabProducts.map(product => (
                         <ProductCard
                             key={product.id}
                             product={product}
                             onQuickView={() => setQuickViewProduct(product)}
                         />
                     )) : (
-                        <div className="col-span-4 text-center py-20 text-gray-400">Loading products...</div>
+                        <div className="col-span-4 text-center py-20 text-gray-400">No products found.</div>
                     )}
                 </div>
             </section>
@@ -244,7 +278,12 @@ const Home = () => {
                     className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory hide-scrollbar"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                    {products.slice(0, 10).map((product) => (
+                    {loadingPrimary ? Array(4).fill(0).map((_, i) => (
+                        <div key={i} className="min-w-[280px] md:min-w-[300px] snap-start">
+                             <Skeleton className="aspect-square w-full rounded-2xl mb-4" />
+                             <Skeleton className="h-4 w-3/4" />
+                        </div>
+                    )) : products.slice(0, 10).map((product) => (
                         <div key={product.id} className="min-w-[280px] md:min-w-[300px] snap-start">
                             <ProductCard
                                 product={product}
@@ -461,7 +500,7 @@ const QuickViewModal = ({ product, onClose }) => {
     );
 };
 
-const ProductCard = ({ product, onQuickView }) => {
+const ProductCard = memo(({ product, onQuickView }) => {
     const { addToCart } = useCart();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const activeWishlist = isInWishlist(product.id);
@@ -531,9 +570,9 @@ const ProductCard = ({ product, onQuickView }) => {
             </div>
         </div>
     );
-};
+});
 
-const TestimonialCard = ({ name, role, text, img }) => (
+const TestimonialCard = memo(({ name, role, text, img }) => (
     <div className="bg-teal-800/50 backdrop-blur-sm p-8 rounded-2xl border border-teal-700/50">
         <Quote className="w-8 h-8 text-teal-400 mb-6 opacity-50" />
         <p className="text-teal-50 text-lg mb-6 leading-relaxed italic">"{text}"</p>
@@ -545,9 +584,9 @@ const TestimonialCard = ({ name, role, text, img }) => (
             </div>
         </div>
     </div>
-);
+));
 
-const BlogCard = ({ image, date, title, desc, slug }) => (
+const BlogCard = memo(({ image, date, title, desc, slug }) => (
     <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 group hover:border-teal-200 transition-colors">
         <div className="h-48 overflow-hidden relative">
             <Link to={`/blog/${slug}`}>
@@ -567,7 +606,7 @@ const BlogCard = ({ image, date, title, desc, slug }) => (
             </Link>
         </div>
     </div>
-);
+));
 
 const TimeBox = ({ val, label }) => (
     <div className="flex flex-col items-center">
@@ -578,7 +617,7 @@ const TimeBox = ({ val, label }) => (
     </div>
 );
 
-const FeatureItem = ({ icon, title, desc }) => (
+const FeatureItem = memo(({ icon, title, desc }) => (
     <div className="flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
         <div className="bg-white p-3 rounded-lg shadow-sm text-teal-600 border border-gray-100">{icon}</div>
         <div>
@@ -586,6 +625,6 @@ const FeatureItem = ({ icon, title, desc }) => (
             <p className="text-sm text-gray-500 leading-snug">{desc}</p>
         </div>
     </div>
-);
+));
 
 export default Home;
