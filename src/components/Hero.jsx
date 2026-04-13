@@ -33,7 +33,7 @@ const Hero = () => {
   };
 
   return (
-    <div className="bg-white pb-10 pt-6">
+    <div className="bg-white pb-10 pt-0">
       <img src="../banner/banner-01.png" className="w-full h-[100vh] object-cover" />
       <div className="container mx-auto px-4 hidden">
 
